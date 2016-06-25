@@ -1,0 +1,6 @@
+.idea
+data_processing/processed_data
+*.iml
+.DS_Store
+__pycache__
+*.pyc
