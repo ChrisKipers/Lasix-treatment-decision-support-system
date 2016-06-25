@@ -1,11 +1,3 @@
-from operator import itemgetter
-
-import pandas as pd
-
-from sklearn.pipeline import Pipeline
-from sklearn.cross_validation import train_test_split
-from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import LabelBinarizer
 
 class DecisionEngine(object):
     """Provides lasix treatment recommendations based on patient data.
@@ -23,100 +15,65 @@ class DecisionEngine(object):
     along with the probabilities are returned the caller.
     """
 
-    def __init__(self, survival_predictor, treatment_predictor, survival_preprocessor, treatment_preprocessor, historical_data):
+    def __init__(self, actual_treatment_predictor, outcome_predictor, historical_data):
         """
 
         Args:
             DataFrame with past patient data. The data is used to train the machine learning model.
         """
-        self._treatment_categories = historical_data.treatment.unique()
-        self._treatment_label_binarizer = LabelBinarizer()
-        self._treatment_label_binarizer.fit(self._treatment_categories)
-        self._survival_preprocessor = survival_preprocessor
-        self._survival_predictor = survival_predictor
-        self._treatment_preprocessor = treatment_preprocessor
-        self._treatment_predictor = treatment_predictor
-        self._survival_pipeline =\
-            Pipeline([('preprocess', self._survival_preprocessor), ('predictor', self._survival_predictor)])
-        self._treatment_predictor =\
-            Pipeline([('preprocess', self._treatment_preprocessor), ('predictor', self._treatment_predictor)])
+        self._actual_treatment_predictor = actual_treatment_predictor
+        self._outcome_predictor = outcome_predictor
 
-        self._train_survival_pipeline(historical_data)
-        self._train_treatment_pipeline(historical_data)
+        self._actual_treatment_predictor.fit(historical_data)
+        self._outcome_predictor.fit(historical_data)
 
     def get_treatment_suggestion(self, prediction_df):
+        # Remove treatment column from prediction_df since we will be cross referencing all valid treatments
+        # with each patient feature.
         prediction_df = prediction_df.drop('treatment', axis=1).copy()
+        # Add a sample_id column to the dataframe to be able to reconcile treatment recommendations with
+        # the patient feature they are for.
         prediction_df['sample_id'] = range(len(prediction_df))
-        treatments_per_sample_id = self._get_treatments_per_sample_id(prediction_df)
+
+        # Get all valie treatments for each sample_id
+        treatments_per_sample_id = self._actual_treatment_predictor.get_possible_treatments(prediction_df)
+        # Cross reference all patient features with valid treatements for the features
         expanded_prediction_df = prediction_df.merge(treatments_per_sample_id, on="sample_id")
 
-        # all_prediction_dfs = \
-        #     [self._create_data_copy_with_treatment(prediction_df, treatment)
-        #      for treatment in self._treatment_categories]
-        # expanded_prediction_df = pd.concat(all_prediction_dfs)
-        # expanded_prediction_df.reset_index(level=0, inplace=True, drop=True)
-
-        # The predict probability returns an array of tuples. The first element in the tuple is probability of living,
-        # the second element is probability of dying.
+        # Add the probability of survival for each row
         expanded_prediction_df['probability_of_living'] = \
-            [prob[0] for prob in self._survival_pipeline.predict_proba(expanded_prediction_df)]
+            self._outcome_predictor.get_probability_of_survival(expanded_prediction_df)
 
-        return self._get_rows_with_best_probility_for_sample_id(expanded_prediction_df)
+        # Keep only one record per sample_id. The record kept is the one with the highest probability.
+        rows_with_best_probability = \
+            self._get_rows_with_best_probility_for_sample_id(expanded_prediction_df)
+        # Return only the treatment and probability_of_living. The returned dataframe can be matched with
+        # the input dataframe by row position.
+        return rows_with_best_probability[['treatment', 'probability_of_living']]
 
-    def _create_data_copy_with_treatment(self, data, treatment):
-        data_copy = data.copy()
-        data_copy['treatment'] = treatment
-        return data_copy
+    def get_actual_treatment_feature_importance(self):
+        """Returns a dataframe containing the each column used by the actual treatment prediction model
+        and the relative importance it has to the outcome.
 
-    def _get_treatments_per_sample_id(self, prediction_df):
-        # leave comment on structure
-        probabilities_sectioned_by_treatment = self._treatment_predictor.predict_proba(prediction_df)
-        ordered_treatments = self._treatment_label_binarizer.classes_
-        treatment_dfs = []
+        Returns:
+            A dataframe with the following columns:
+            feature: The column
+            importance: How important the column is in determining the prediction.
+            The sum of all importances adds up to 1.
+        """
+        return self._actual_treatment_predictor.get_feature_importance()
 
-        for (treatment, probabilities_for_treatment) in zip(ordered_treatments, probabilities_sectioned_by_treatment):
-            probability_of_treatment = [prob[1] if len(prob) > 1 else 0 for prob in probabilities_for_treatment]
-            df = pd.DataFrame({
-                "treatment": treatment,
-                "probability_of_treatment": probability_of_treatment,
-                "sample_id": range(len(probability_of_treatment))
-            })
-            treatment_dfs.append(df)
+    def get_outcome_feature_importance(self):
+        """Returns a dataframe containing the each column used by the outcome prediction model
+        and the relative importance it has to the outcome.
 
-        combined_df = pd.concat(treatment_dfs)
-        selected_treatement = combined_df.groupby("sample_id")["probability_of_treatment"].nlargest(5).reset_index().drop('level_1', axis=1)
-        return pd.merge(combined_df, selected_treatement, left_on=["sample_id", "probability_of_treatment"], right_on=["sample_id", 0])[["sample_id", "treatment"]]
-        # Perhaps consider choosing the top n treatment options
-        #return combined_df[combined_df.probability_of_treatment > 0.03]
-
-    def get_feature_importance(self):
-        raw_feature_importance = self._survival_predictor.feature_importances_
-        return self._survival_preprocessor.transform_feature_importance(raw_feature_importance)
-
-    def _train_survival_pipeline(self, historical_data):
-        y = historical_data.died.values
-        X_train, X_test, y_train, y_test = train_test_split(historical_data, y, test_size=0.3)
-
-        self._survival_pipeline.fit(X_train, y_train)
-
-        train_pred = self._survival_pipeline.predict(X_train)
-        print("survival train accuracy %.5f" % accuracy_score(train_pred, y_train))
-
-        test_pred = self._survival_pipeline.predict(X_test)
-        print("survival test accuracy %.5f" % accuracy_score(test_pred, y_test))
-
-    def _train_treatment_pipeline(self, historical_data):
-        y = self._treatment_label_binarizer.transform(historical_data.treatment.values)
-        X_train, X_test, y_train, y_test = train_test_split(historical_data, y, test_size=0.3)
-
-        self._treatment_predictor.fit(X_train, y_train)
-
-        # TODO: use better accuracy measure, such as multiclass log loss
-        train_pred = self._treatment_predictor.predict(X_train)
-        print("Treatment train accuracy %.5f" % accuracy_score(train_pred, y_train))
-
-        test_pred = self._treatment_predictor.predict(X_test)
-        print("Treatment test accuracy %.5f" % accuracy_score(test_pred, y_test))
+        Returns:
+            A dataframe with the following columns:
+            feature: The column
+            importance: How important the column is in determining the prediction.
+            The sum of all importances adds up to 1.
+        """
+        return self._outcome_predictor.get_feature_importance()
 
     def _get_rows_with_best_probility_for_sample_id(self, df):
         max_idx = df.groupby('sample_id').apply(lambda x: x['probability_of_living'].idxmax())
