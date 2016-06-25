@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import logging
 
 class DecisionEngineAnalyzer(object):
@@ -7,6 +8,8 @@ class DecisionEngineAnalyzer(object):
         self._data = data
         self._decision_engine = decision_engine
         self._top_suggestions = self._decision_engine.get_treatment_suggestion(self._data)
+        self._actual_treatment_with_recommended_treatment =\
+            self.get_actual_treatment_with_recommended_treatment()
 
     def get_percent_of_correct_treatments(self):
         return (self._top_suggestions.treatment == self._data.treatment).sum() / len(self._data)
@@ -20,7 +23,7 @@ class DecisionEngineAnalyzer(object):
         })
 
     def get_treatment_survival_rate(self):
-        suggested_living = self._top_suggestions.probability_of_living >= .5
+        suggested_living = self._top_suggestions.probability_of_living >= 0.5
         suggested_living_df = pd.DataFrame({"treatment": self._top_suggestions.treatment, "alive": suggested_living})
         suggested_living_percent_by_treatment = suggested_living_df.pivot_table(values="alive", index="treatment")
 
@@ -31,3 +34,57 @@ class DecisionEngineAnalyzer(object):
             "suggested_survival_rate": suggested_living_percent_by_treatment,
             "actual_survival_rate": actual_living_counts_by_treatment
         })
+
+    def get_actual_treatment_with_recommended_treatment(self):
+        actual = self._data[['treatment', 'died']]
+        recommended = self._top_suggestions[['treatment', 'probability_of_living']]
+        recommended_outcome = recommended.probability_of_living >= 0.5
+        actual_outcome = ~actual.died
+
+        return pd.DataFrame({
+            "actual_treatment": actual.treatment.values,
+            "actual_survived": actual_outcome.values,
+            "recommended_treatment": recommended.treatment.values,
+            "recommended_survived": recommended_outcome.values
+        })
+
+    def get_outcome_change_per_actual_treatment(self):
+        a_survived = self._actual_treatment_with_recommended_treatment.actual_survived.astype(int)
+        r_survived = self._actual_treatment_with_recommended_treatment.recommended_survived.astype(int)
+
+        target_treatments = self._actual_treatment_with_recommended_treatment.actual_treatment.values
+        survived_change_diffs = (a_survived - r_survived).values
+
+        return self._get_outcome_change_per_treatment(target_treatments, survived_change_diffs)
+
+    def get_outcome_change_per_recommended_treatment(self):
+        a_survived = self._actual_treatment_with_recommended_treatment.actual_survived.astype(int)
+        r_survived = self._actual_treatment_with_recommended_treatment.recommended_survived.astype(int)
+
+        target_treatments = self._actual_treatment_with_recommended_treatment.recommended_treatment.values
+        survived_change_diffs = (r_survived - a_survived).values
+
+        return self._get_outcome_change_per_treatment(target_treatments, survived_change_diffs)
+
+    def get_recommended_treatments_count_per_actual_treatment(self):
+        return pd.pivot_table(
+            self._actual_treatment_with_recommended_treatment,
+            index=['actual_treatment', 'recommended_treatment'],
+            values='recommended_survived', aggfunc=len
+        )
+
+    def get_actual_treatments_count_per_recommended_treatment(self):
+        return pd.pivot_table(
+            self._actual_treatment_with_recommended_treatment,
+            index=['recommended_treatment', 'actual_treatment'],
+            values='recommended_survived', aggfunc=len
+        )
+
+    def _get_outcome_change_per_treatment(self, treatments, survival_change_diff):
+        change_with_actual_treatment = \
+            pd.DataFrame({
+                "treatment": treatments,
+                "surv_change": survival_change_diff
+            })
+
+        return pd.pivot_table(change_with_actual_treatment, index='treatment', values='surv_change', aggfunc=np.mean)

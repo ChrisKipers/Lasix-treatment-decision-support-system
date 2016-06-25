@@ -28,3 +28,15 @@ survival_rates = decision_engine_analyzer.get_treatment_survival_rate()
 all_date = pd.merge(counts, survival_rates, left_index=True, right_index=True).sort_values('suggested_count', ascending=False)
 print('Treatment suggestions')
 print(all_date)
+
+print('Actual treatment survival rate increase over recommended treatment')
+print(decision_engine_analyzer.get_outcome_change_per_actual_treatment())
+
+print('Recommended treatment survival rate increase over actual treatment')
+print(decision_engine_analyzer.get_outcome_change_per_recommended_treatment())
+
+print('Recommended treatment counts per actual treatment')
+print(decision_engine_analyzer.get_recommended_treatments_count_per_actual_treatment())
+
+print('Actual treatment counts per recommended treatment')
+print(decision_engine_analyzer.get_actual_treatments_count_per_recommended_treatment())
