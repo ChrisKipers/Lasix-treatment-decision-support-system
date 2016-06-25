@@ -36,7 +36,8 @@ def get_processed_lasix(use_cache=False):
 
     treatment_categories = \
         lasix_poe_w_dates.dose_val_rx + " " + lasix_poe_w_dates.dose_unit_rx + " " + lasix_poe_w_dates.route
-    treatment_categories = treatment_categories.str.lower()
+    # Standardize units since it doesn't make sence why "ml iv" is different from "mg iv"
+    treatment_categories = treatment_categories.str.lower().str.replace("ml", "mg")
     treatment_categories.name = "treatment_category"
 
     # TODO: consider filtering out rows that have a rare treatment category.
