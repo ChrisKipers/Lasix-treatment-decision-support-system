@@ -110,7 +110,10 @@ def process_labevents(use_cache=False):
 
 @cache_results("lab_results_with_previous_day_results.csv")
 def get_lab_results_with_previous_day_results(use_cache=False):
+
     lab_results = process_labevents()
+    columns_to_get_diffs = [column for column in lab_results.columns if column not in ["hadm_id", "charttime"]]
+
     previous_day_lab_results = lab_results.copy()
     previous_day_lab_results.charttime = previous_day_lab_results.charttime - Day(1)
 
@@ -120,6 +123,15 @@ def get_lab_results_with_previous_day_results(use_cache=False):
         on=["hadm_id", "charttime"],
         how="left",
         suffixes=('', '_previous'))
+
+    for column in columns_to_get_diffs:
+        current = merged_results[column]
+        previous = merged_results[column + "_previous"]
+        diff = current - previous
+        merged_results[column + "_diff"] = diff
+
+    columns_to_drop = [column + "_previous" for column in columns_to_get_diffs]
+    return merged_results.drop(columns_to_drop, axis=1)
 
     # For each previous column, if the value is null, we will set the previous value to the current value.
     # In reality only the first day for each admission should have missing previous values, but this approach is very

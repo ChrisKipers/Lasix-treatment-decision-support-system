@@ -8,28 +8,36 @@ from sklearn.pipeline import Pipeline
 
 _TREATMENT_FIELD = 'treatment'
 
+# TODO I'm not sure this is the best place to control what features are included and not included for
+# training the prediction models. I think their might need to be another layer of abstraction.
+
+# Most the categorical fields did not seem to enhance predictive power and actually lead to less generalization and
+# result there not as interpretable.
 _CATEGORY_FIELDS = [
     'sex',
-    'marital_status_descr',
-    'ethnicity_descr',
-    'overall_payor_group_descr',
-    'religion_descr'
+    #'marital_status_descr',
+    #'ethnicity_descr',
+    #'overall_payor_group_descr',
+    #'religion_descr'
 ]
 
-_ORIGINAL_SCALAR_FIELDS = [
-    'alt(sgpt)',
-    'ast(sgot)',
-    'ctropnt',
-    'hct',
-    'hgb',
-    'potassium',
-    'probnp',
-    'sodium',
-    'urea_n',
-    'uric_acid'
+# Lab items are removed if they have a low count
+_LAB_ITEM_FIELDS = [
+    # 'alt(sgpt)', # 4401 / 21571
+    # 'ast(sgot)', # 4396 / 21517
+    'creat', # 19819 / 21517
+    # 'ctropni', # 165 / 21517
+    # 'ctropnt', # 2970 / 21517
+    'hct', # 19583 / 21517
+    'hgb', # 19172 / 21517
+    'potassium', # 19504 / 21517
+    # 'probnp', # 367 / 21517
+    'sodium', # 19308 / 21517
+    'urea_n', # 19784 / 21517
+    # 'uric_acid' # 278 / 21517
 ]
 
-_SCALAR_FIELDS = _ORIGINAL_SCALAR_FIELDS + [name + '_previous' for name in _ORIGINAL_SCALAR_FIELDS]
+_SCALAR_FIELDS = _LAB_ITEM_FIELDS + [name + '_diff' for name in _LAB_ITEM_FIELDS] + ["age"]
 
 class CongestiveHeartFailurePreprocessor(object):
     """Prepares the congestive heart failure data to be used with a machine learning model, as well as
