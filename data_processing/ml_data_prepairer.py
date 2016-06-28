@@ -1,8 +1,8 @@
 import pandas as pd
-
-from data_processing.baseline_processor import get_lab_results_with_previous_day_results
+from data_processing.chart_event_processor import get_processed_chart_events
+from data_processing.lab_event_processor import get_processed_lab_events
 from data_processing.get_patient_info import get_patient_info
-from data_processing.hospital_admission_outcome import get_hospital_admission_outcomes
+from data_processing.hospital_admission_outcome import get_outcome
 from data_processing.lasix_poe_processor import get_processed_lasix
 from data_processing.processed_data_interface import cache_results
 
@@ -39,29 +39,34 @@ def get_ml_data(use_cache=False):
         age:
         died:
     """
-    lab_events = get_lab_results_with_previous_day_results(use_cache=use_cache)
+    lab_events = get_processed_lab_events(use_cache=use_cache)
+    chart_events = get_processed_chart_events(use_cache=use_cache)
     patients = get_patient_info(use_cache=use_cache)
-    hospital_outcomes = get_hospital_admission_outcomes(use_cache=use_cache)
     lasix = get_processed_lasix(use_cache=use_cache)
 
     current_merged_df = pd.merge(
         lasix,
         lab_events,
-        left_on=["hadm_id", "date"],
-        right_on=["hadm_id", "charttime"],
-        how="outer"  # Keep rows even if there is not a row from each df
+        how="inner"  # Keep rows even if there is not a row from each df
+    )
+
+    current_merged_df = pd.merge(
+        current_merged_df,
+        chart_events,
+        how="inner"  # Keep rows even if there is not a row from each df
     )
 
     current_merged_df = pd.merge(
         current_merged_df,
         patients,
-        on=["subject_id", "hadm_id"]
+        how="inner"
     )
 
+    outcome_df = get_outcome(current_merged_df, death_time_frame=3)
     current_merged_df = pd.merge(
         current_merged_df,
-        hospital_outcomes,
-        on=["hadm_id"]
+        outcome_df,
+        how="inner"
     )
 
     return current_merged_df

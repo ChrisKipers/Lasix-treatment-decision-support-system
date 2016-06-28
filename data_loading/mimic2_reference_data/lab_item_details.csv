@@ -1,4 +1,4 @@
-ITEMID,TEST_NAME,FLUID,CATEGORY,LOINC_CODE,LOINC_DESCRIPTION
+itemid,test_name,fluid,category,loinc_code,loinc_description
 50225,"POTASSIUM","OTHER BODY FLUID","CHEMISTRY","2821-7","Potassium [Moles/volume] in Body fluid"
 50226,"SODIUM","OTHER BODY FLUID","CHEMISTRY","2950-4","Sodium [Moles/volume] in Body fluid"
 50227,"SURF/ALBU","OTHER BODY FLUID","CHEMISTRY",,

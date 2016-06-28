@@ -1,7 +1,7 @@
 import pandas as pd
 import logging
 
-from data_loading.data_loaders import get_lasix_poe, get_hospital_admissions
+from data_loading.data_loaders import get_lasix_poe, get_hospital_admissions, get_icustay_details
 from data_processing.datetime_modifier import get_modify_dates_fn
 from data_processing.processed_data_interface import cache_results
 
@@ -45,36 +45,45 @@ def get_processed_lasix(use_cache=False):
     modify_dates_fn = get_modify_dates_fn()
     lasix_poe_w_dates = modify_dates_fn(lasix_poe_w_dates, ["start_dt", "stop_dt"])
 
-    hospital_admissions = modify_dates_fn(get_hospital_admissions(), ["admit_dt", "disch_dt"])
+    icu_details = modify_dates_fn(get_icustay_details(), ['icustay_intime', 'icustay_outtime'])
 
     treatment_df = pd.concat([lasix_poe_w_dates, treatment_categories], axis=1)
-    treatment_df_by_hadm_id = treatment_df.groupby("hadm_id")
+    treatment_df_by_icu_id = treatment_df.groupby("icustay_id")
 
     expanded_treatments = []
-    hadm_ids_w_no_treatments = []
-    for adm_row in hospital_admissions.itertuples():
+    icu_id_w_no_treatments = []
+    for icu_row in icu_details.itertuples():
         try:
-            treatments_for_admission = treatment_df_by_hadm_id.get_group(adm_row.hadm_id).sort_values(["start_dt"])
+            treatments_for_icustay = treatment_df_by_icu_id.get_group(icu_row.icustay_id).sort_values(["start_dt"])
         except:
-            hadm_ids_w_no_treatments.append(adm_row.hadm_id)
-            continue
+            icu_id_w_no_treatments.append(icu_row.icustay_id)
+            icu_stay_time_delta = icu_row.icustay_outtime - icu_row.icustay_intime
+            icu_stay_in_hours = (icu_stay_time_delta.days * 24) + icu_stay_time_delta.seconds * (60 * 60)
 
-        for day in pd.date_range(adm_row.admit_dt, adm_row.disch_dt):
+            # Only count the ICU if they meet an hour threshold. The threshold is required so that they are given the
+            # oportunity to receive treatment. If we include records where they are denied treatment, then the
+            # recommended treatment will be no treatment despite that not being the case since they died.
+
+            if icu_stay_in_hours >= 12:
+                # Create empty df so that each day in icustay will have no treatment
+                treatments_for_icustay = pd.DataFrame()
+            else:
+                continue
+
+        for day in pd.date_range(icu_row.icustay_intime.date(), icu_row.icustay_outtime.date()):
             selected_row = None
-            for current_row in treatments_for_admission.itertuples():
+            for current_row in treatments_for_icustay.itertuples():
                 if current_row.start_dt <= day <= current_row.stop_dt:
                     selected_row = current_row
 
             treatment_category = None if selected_row is None else selected_row.treatment_category
-
             expanded_treatments.append({
                 "date": day,
                 "treatment": treatment_category,
-                "subject_id": adm_row.subject_id,
-                "hadm_id": adm_row.hadm_id})
+                "icustay_id": icu_row.icustay_id})
 
     logging.info("No treatments for %d hadm_ids: %s" % \
-                 (len(hadm_ids_w_no_treatments), ",".join([str(s) for s in hadm_ids_w_no_treatments])))
+                 (len(icu_id_w_no_treatments), ",".join([str(s) for s in icu_id_w_no_treatments])))
     expanded_treatments_df = pd.DataFrame(expanded_treatments)
     expanded_treatments_df.treatment.fillna("No treatment", inplace=True)
     return expanded_treatments_df

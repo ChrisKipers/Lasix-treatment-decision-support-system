@@ -12,7 +12,7 @@ def does_file_exist(file_name):
 def save_data_frame(dataframe, file_name):
     if not os.path.exists(PROCESSED_DATA_DIR):
         os.makedirs(PROCESSED_DATA_DIR)
-    dataframe.to_csv(os.path.join(PROCESSED_DATA_DIR, file_name))
+    dataframe.to_csv(os.path.join(PROCESSED_DATA_DIR, file_name), index=False)
 
 
 def load_data_frame(file_name):

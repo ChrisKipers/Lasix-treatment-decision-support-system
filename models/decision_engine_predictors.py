@@ -46,6 +46,13 @@ class _BasePredictor(object):
         test_pred = self._pipeline.predict(X_test)
         print("test accuracy %.5f" % accuracy_score(test_pred, y_test))
 
+        has_treatment = ~data.treatment.isnull()
+        X_treatment = data[has_treatment]
+        y_treatment = y[has_treatment]
+
+        treat_pred = self._pipeline.predict(X_treatment)
+        print("treatment accuracy: %.5f" % accuracy_score(treat_pred, y_treatment))
+
         self._is_trained = True
 
         return self

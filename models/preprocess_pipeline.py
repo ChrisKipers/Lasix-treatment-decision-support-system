@@ -34,7 +34,11 @@ _LAB_ITEM_FIELDS = [
     # 'probnp', # 367 / 21517
     'sodium', # 19308 / 21517
     'urea_n', # 19784 / 21517
-    # 'uric_acid' # 278 / 21517
+    # 'uric_acid', # 278 / 21517
+    'admit_wt', 'glucose_(70-105)',
+    'heart_rate', 'hematocrit', 'hemoglobin', 'magnesium_(1.6-2.6)',
+    'phosphorous(2.7-4.5)', 'potassium_(3.5-5.3)', 'respiratory_rate',
+    'spo2', 'temperature_c_(calc)'
 ]
 
 _SCALAR_FIELDS = _LAB_ITEM_FIELDS + [name + '_diff' for name in _LAB_ITEM_FIELDS] + ["age"]
