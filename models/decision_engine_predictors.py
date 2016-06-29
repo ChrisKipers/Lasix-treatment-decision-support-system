@@ -17,7 +17,7 @@ class _BasePredictor(object):
         Args:
             prediction_model: The model used to make predictions
             preprocessor: The preprocessor used to transform the patient features into a format that can be
-            used by the predition_model
+            used by the prediction_model
 
         """
         self._is_trained = False
@@ -120,12 +120,21 @@ class OutcomePredictor(_BasePredictor):
 
 
 class ActualTreatmentPredictor(_BasePredictor):
-    """Returns the most likely treatments for a patient."""
+    """Returns the most likely treatments for a patient.
 
-    def __init__(self, prediction_model, preprocessor):
+    Args:
+        prediction_model: The model used to make predictions
+        preprocessor: The preprocessor used to transform the patient features into a format that can be
+        used by the prediction_model
+        recommendation_probability_threshold: The probability threshold that a potential recommendation needs to have
+        a higher probability than to be considered a possible treatment.
+    """
+
+    def __init__(self, prediction_model, preprocessor, recommendation_probability_threshold=0.05):
         super().__init__(prediction_model, preprocessor)
 
         self._treatment_label_binarizer = LabelBinarizer()
+        self._recommendation_probability_threshold = recommendation_probability_threshold
 
     def _pre_fit_hook(self, data):
         self._treatment_label_binarizer.fit(data.treatment.unique())
@@ -167,8 +176,23 @@ class ActualTreatmentPredictor(_BasePredictor):
             treatment_dfs.append(df)
 
         combined_df = pd.concat(treatment_dfs)
-        selected_treatement = combined_df.groupby("sample_id")["probability_of_treatment"].nlargest(
-            5).reset_index().drop('level_1', axis=1)
-        return pd.merge(combined_df, selected_treatement, left_on=["sample_id", "probability_of_treatment"],
-                        right_on=["sample_id", 0])[["sample_id", "treatment"]]
-        # return combined_df[combined_df.probability_of_treatment > 0.03]
+
+        # Get all treatments that have a probability greater than the threshold
+        sample_with_high_probability = \
+            combined_df[combined_df.probability_of_treatment > self._recommendation_probability_threshold]
+
+        # Get the top probability for a sample_id. This treatment will be used if there is no treatment for the
+        # sample_id greater than the threshold
+        top_treatment_per_sample_id = combined_df.groupby("sample_id")["probability_of_treatment"].nlargest(
+            1).reset_index().drop('level_1', axis=1)
+
+        # Find top treatments for samples that have not treatment above the threshold. This is a rare case but can
+        # happen.
+        samples_ids_with_high_prob = set(sample_with_high_probability.sample_id.unique())
+        all_sample_ids = set(combined_df.sample_id.unique())
+        ids_not_in_high_prob = all_sample_ids - samples_ids_with_high_prob
+
+        top_treatments_for_samples_missing_high_prob =\
+            top_treatment_per_sample_id[top_treatment_per_sample_id.sample_id.isin(ids_not_in_high_prob)]
+
+        return pd.concat([sample_with_high_probability, top_treatments_for_samples_missing_high_prob])
