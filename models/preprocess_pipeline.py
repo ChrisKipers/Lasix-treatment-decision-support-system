@@ -23,22 +23,29 @@ _CATEGORY_FIELDS = [
 
 # Lab items are removed if they have a low count
 _LAB_ITEM_FIELDS = [
-    # 'alt(sgpt)', # 4401 / 21571
-    # 'ast(sgot)', # 4396 / 21517
-    'creat', # 19819 / 21517
-    # 'ctropni', # 165 / 21517
-    # 'ctropnt', # 2970 / 21517
-    'hct', # 19583 / 21517
-    'hgb', # 19172 / 21517
-    'potassium', # 19504 / 21517
-    # 'probnp', # 367 / 21517
-    'sodium', # 19308 / 21517
-    'urea_n', # 19784 / 21517
-    # 'uric_acid', # 278 / 21517
-    'admit_wt', 'glucose_(70-105)',
-    'heart_rate', 'hematocrit', 'hemoglobin', 'magnesium_(1.6-2.6)',
-    'phosphorous(2.7-4.5)', 'potassium_(3.5-5.3)', 'respiratory_rate',
-    'spo2', 'temperature_c_(calc)'
+    # 'alt(sgpt)', # 18%
+    # 'ast(sgot)', # 18%
+    'creat', # 95%
+    # 'ctropni', # 2%
+    # 'ctropnt', # 15%
+    'hct', # 94%
+    'hgb', # 91%
+    'potassium', # 96%
+    # 'probnp', # 0%
+    'sodium', # 95%
+    'urea_n', # 95%
+    # 'uric_acid', # 1%
+    # 'admit_wt', # 21%
+    'glucose_(70-105)', # 95%
+    'heart_rate', # 98%
+    'hematocrit', # 92%
+    'hemoglobin', # 90%
+    'magnesium_(1.6-2.6)', #91%
+    #'phosphorous(2.7-4.5)', # 81%
+    'potassium_(3.5-5.3)', # 98%
+    'respiratory_rate', # 98%
+    'spo2', # 98%
+    'temperature_c_(calc)' # 92%
 ]
 
 _SCALAR_FIELDS = _LAB_ITEM_FIELDS + [name + '_diff' for name in _LAB_ITEM_FIELDS] + ["age"]

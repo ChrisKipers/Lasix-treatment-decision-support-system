@@ -133,9 +133,6 @@ def _add_event_value_diffs_to_flattened_events(flattened_events):
         The first diffs for each event type for the first day in an icustay will be 0 since there is no previous value
         to compare it to.
 
-    TODO: Consider adding a flag or perhaps days in icu feature to the finally ml training data so ML model can detect
-    when a 0 diff is because nothing changed vs it was the first day.
-
     Args:
         A dataframe with the following columns
         icustay_id: The icustay the event was recorded for.
@@ -171,6 +168,8 @@ def _add_event_value_diffs_to_flattened_events(flattened_events):
         current = merged_results[column]
         previous = merged_results[column + "_previous"]
         diff = current - previous
+        # If a diff is na, assume that the value didn't change since yesterday.
+        diff.fillna(0, inplace=True)
         merged_results[column + "_diff"] = diff
 
     columns_to_drop = [column + "_previous" for column in columns_to_get_diffs]
