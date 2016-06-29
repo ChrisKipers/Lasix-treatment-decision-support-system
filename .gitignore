@@ -4,3 +4,4 @@ data_processing/processed_data
 .DS_Store
 __pycache__
 *.pyc
+models/debugging_files

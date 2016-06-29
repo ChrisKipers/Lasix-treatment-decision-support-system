@@ -5,6 +5,8 @@ from sklearn.cross_validation import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelBinarizer
 
+from models.save_file_helper import save_debugging_file
+
 
 class _BasePredictor(object):
     """Provides shared functionally used by OutcomePredictor and ActualTreatmentPredictor"""
@@ -50,9 +52,18 @@ class _BasePredictor(object):
         X_treatment = data[has_treatment]
         y_treatment = y[has_treatment]
 
+        # Predict accuracy among the results with a treatment since the data is skewed so heavy in favor of no
+        # treatment.
         treat_pred = self._pipeline.predict(X_treatment)
         print("treatment accuracy: %.5f" % accuracy_score(treat_pred, y_treatment))
 
+        all_pred = self._pipeline.predict(data)
+        predicted_value = self._get_predicted_value(all_pred)
+
+        prediction_results = data.copy()
+        prediction_results['prediction'] = predicted_value
+
+        save_debugging_file(prediction_results, self.__class__.__name__ + "_prediction_results.csv")
         self._is_trained = True
 
         return self
@@ -81,6 +92,10 @@ class _BasePredictor(object):
     def _pre_fit_hook(self, data):
         pass
 
+    def _get_predicted_value(self, prediction):
+        pass
+
+
 class OutcomePredictor(_BasePredictor):
     """Predicts the probability the patient survived."""
 
@@ -100,6 +115,9 @@ class OutcomePredictor(_BasePredictor):
     def _get_outcome_data_for_training(self, data):
         return data.died.values
 
+    def _get_predicted_value(self, prediction):
+        return prediction
+
 
 class ActualTreatmentPredictor(_BasePredictor):
     """Returns the most likely treatments for a patient."""
@@ -114,6 +132,9 @@ class ActualTreatmentPredictor(_BasePredictor):
 
     def _get_outcome_data_for_training(self, data):
         return self._treatment_label_binarizer.transform(data.treatment.values)
+
+    def _get_predicted_value(self, prediction):
+        return self._treatment_label_binarizer.inverse_transform(prediction)
 
     def get_possible_treatments(self, data):
         """Returns the most likely treatments for a patient.
@@ -146,6 +167,8 @@ class ActualTreatmentPredictor(_BasePredictor):
             treatment_dfs.append(df)
 
         combined_df = pd.concat(treatment_dfs)
-        selected_treatement = combined_df.groupby("sample_id")["probability_of_treatment"].nlargest(5).reset_index().drop('level_1', axis=1)
-        return pd.merge(combined_df, selected_treatement, left_on=["sample_id", "probability_of_treatment"], right_on=["sample_id", 0])[["sample_id", "treatment"]]
-        #return combined_df[combined_df.probability_of_treatment > 0.03]
+        selected_treatement = combined_df.groupby("sample_id")["probability_of_treatment"].nlargest(
+            5).reset_index().drop('level_1', axis=1)
+        return pd.merge(combined_df, selected_treatement, left_on=["sample_id", "probability_of_treatment"],
+                        right_on=["sample_id", 0])[["sample_id", "treatment"]]
+        # return combined_df[combined_df.probability_of_treatment > 0.03]
