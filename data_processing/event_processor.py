@@ -1,49 +1,73 @@
 import pandas as pd
 from pandas.tseries.offsets import Day
 
-def process_events(event_records):
-    """Processes lab events into a format that can be merged with dataframes with [icustay_id, date] primary key.
-    A row in the lab events dataframe is a specific lab item and value for that item at a specific time. A row in
-    the output dataframe is all values for every lab item for a icustay_id and day.
 
-    The transformation process has two critical steps:
+def resample_flatten_and_add_diff_values_to_events(event_records):
+    """Reformats event data so that it can be used by machine learning models. Raw event data is structured so that each
+    row represents a single event item. The event item contains a type, a value, icustay_id and charttime. The
+    transformation processes reorganizes this data so that each row represents a single day in the icu with each
+    different event type getting its own column and column containing how the value changed from the previous day.
 
-    1. The lab item events need to be resampled with a constant frequency. There can be many lab items for a single day
-    and some days where there are no lab items. We need to modify the data so that there is only one lab item for
-    each day. This is done by resampling the lab events to a daily frequency, picking the first lab item for the day
-    if there are multiple lab items a day. After resampling, a forward filling (ffill) process is performed to fill
-    in any missing lab items for a day with the previous days value. Before this transformation takes place, the lab
-    items are grouped by icustay_id and itemid so that the resampling and filling is unique per item type and hadm.
-
-    2. In the input dataframe, each row only has one lab item, with a itemid column to differentiate the lab item type.
-    In the output dataframe, each row needs to have a column for every item type, and the value of the columns are the
-    values for that item type for a specific icustay_id and day. We perform this transformation with padas pivot_table
-    function.
+    Note:
+        See documentation in other methods for more information on the different transformation steps.
 
     Args:
-        use_cache: Skip computation and load results from previous computation
+        A dataframe containing the following columns:
+        icustay_id: The icustay the event was recorded for.
+        label: The type of the event.
+        value: The value for the event.
+        charttime: When the event was recorded.
 
+    Returns
+        A dataframe with the following columns
+        icustay_id: The icustay the event was recorded for.
+        date: The day the event was recorded.
+        label1: The value for event with label 1.
+        label1_diff: The value difference for label 1 from the previous day to the current day.
+        ...
+        labeln: The value for event with label n.
+        labeln_diff: The value difference for label n from the previous day to the current day.
+    """
+    resampled_event_data = _resample_and_fill_event_items_grouped_by_icustay(event_records)
+    flattened_event_records = _flatten_events(resampled_event_data)
+    return _add_event_value_diffs_to_flattened_events(flattened_event_records)
+
+
+def _resample_and_fill_event_items_grouped_by_icustay(event_records):
+    """Resamples and forward fills events grouped by label and icustay_id. The purpose of this transformation is to
+    create a normalized view into how the patients event values change day by day.
+
+    Example:
+        Input:
+        icustay_id  | label | value | charttime
+        1           | HR    | 60    | 6/2/16 5:00
+        1           | HR    | 55    | 6/2/16 6:30
+        1           | HR    | 75    | 6/2/16 7:32
+        1           | HR    | 55    | 6/4/16 8:00
+
+        Output:
+        icustay_id  | label | value | date
+        1           | HR    | 60    | 6/2/16
+        1           | HR    | 75    | 6/3/16
+        1           | HR    | 55    | 6/4/16
+
+        In this example, the output contains 3 columns, for each date that values were observed for. The value for
+        6/3/16 was forward filled from the last recorded value on 6/2/16
+
+    Args:
+        A dataframe containing the following columns:
+        icustay_id: The icustay the event was recorded for.
+        label: The type of the event.
+        value: The value for the event.
+        charttime: When the event was recorded.
 
     Returns:
-        A DataFrame with the following columns:
-        icustay_id: The hospital admission ID for the lab results.
-        charttime: The day the lab results were collected.
-        alt(sgpt):
-        ast(sgot):
-        creat:
-        ctropni:
-        ctropnt:
-        hct:
-        hgb:
-        potassium:
-        probnp:
-        sodium:
-        urea_n:
-        uric_acid:
-    TODO enter comments for each column, including units
+        A dataframe with the following columns:
+        icustay_id: The icustay the event was recorded for.
+        label: The type of the event.
+        value: The value for the event.
+        date: The day the event was recorded.
     """
-    event_records.label = event_records.label.str.replace(" ", "_").str.lower()
-
     target_events = event_records.set_index(event_records.charttime)
 
     target_event_fields = target_events[["icustay_id", "label", "value", "charttime"]]
@@ -56,25 +80,88 @@ def process_events(event_records):
     events_grouped_by_hadm_and_label_filled.charttime = \
         events_grouped_by_hadm_and_label_filled.index.get_level_values("charttime")
     # Drop grouping
-    events_grouped_by_hadm_and_label_filled.reset_index(drop=True, inplace=True)
+    return events_grouped_by_hadm_and_label_filled.reset_index(drop=True)
+
+
+def _flatten_events(event_records):
+    """Flattens the events so that each row is unique for icustay_id and date and each different type of event item
+    has its own columns. The purpose of this transformation is to provide a record which represents all event items for
+    a given icustay on a given day.
+
+    Args:
+        A dataframe with the following columns:
+        icustay_id: The icustay the event was recorded for.
+        date: The day the event was recorded.
+        label: The type of the event.
+        value: The value for the event.
+
+    Returns:
+        A dataframe with the following columns
+        icustay_id: The icustay the event was recorded for.
+        date: The day the event was recorded.
+        label1: The value for event with label 1.
+        ...
+        labeln: The value for event with label n.
+
+    """
+    event_records.label = event_records.label.str.replace(" ", "_").str.lower()
 
     # Reshape DF so that each row is unique for a icustay_id and day and each label type is a column
-    pivot = pd.pivot_table(events_grouped_by_hadm_and_label_filled,
-                           values="value", columns=["label"], index=["icustay_id", "charttime"])
+    pivot = pd.pivot_table(event_records, values="value", columns=["label"], index=["icustay_id", "charttime"])
 
-    # TODO change charttime to date to be consistent
     # Flatten out the index so that that they are columns
     return pivot.reset_index().rename(columns={"charttime": "date"})
 
-def add_event_value_diffs_to_flattend_events(flatten_events):
 
-    columns_to_get_diffs = [column for column in flatten_events.columns if column not in ["icustay_id", "date"]]
+def _add_event_value_diffs_to_flattened_events(flattened_events):
+    """Adds the event value diff from the previous day to the current day for each event type.
 
-    previous_day_even_results = flatten_events.copy()
+    Example:
+        input:
+        icustay_id  | date      |   label1  | label2
+        1           | 6/2/16    |   1       | 6
+        1           | 6/3/16    |   4       | 5
+        1           | 6/4/1     |   2       | 8
+
+        output:
+        icustay_id  | date      |   label1  | label1_diff   | label2    | label2_diff
+        1           | 6/2/16    |   1       | 0             | 6         | 0
+        1           | 6/3/16    |   4       | 3             | 5         | -1
+        1           | 6/4/1     |   2       | -2            | 8         | 3
+
+    Note:
+        The first diffs for each event type for the first day in an icustay will be 0 since there is no previous value
+        to compare it to.
+
+    TODO: Consider adding a flag or perhaps days in icu feature to the finally ml training data so ML model can detect
+    when a 0 diff is because nothing changed vs it was the first day.
+
+    Args:
+        A dataframe with the following columns
+        icustay_id: The icustay the event was recorded for.
+        date: The day the event was recorded.
+        label1: The value for event with label 1.
+        ...
+        labeln: The value for event with label n.
+
+    Returns
+        A dataframe with the following columns
+        icustay_id: The icustay the event was recorded for.
+        date: The day the event was recorded.
+        label1: The value for event with label 1.
+        label1_diff: The value difference for label 1 from the previous day to the current day.
+        ...
+        labeln: The value for event with label n.
+        labeln_diff: The value difference for label n from the previous day to the current day.
+    """
+
+    columns_to_get_diffs = [column for column in flattened_events.columns if column not in ["icustay_id", "date"]]
+
+    previous_day_even_results = flattened_events.copy()
     previous_day_even_results.date = previous_day_even_results.date - Day(1)
 
     merged_results = pd.merge(
-        flatten_events,
+        flattened_events,
         previous_day_even_results,
         on=["icustay_id", "date"],
         how="left",

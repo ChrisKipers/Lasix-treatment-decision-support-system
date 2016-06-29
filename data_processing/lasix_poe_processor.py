@@ -1,9 +1,10 @@
 import pandas as pd
 import logging
 
-from data_loading.data_loaders import get_lasix_poe, get_hospital_admissions, get_icustay_details
+from data_loading.data_loaders import get_lasix_poe, get_icustay_details
 from data_processing.datetime_modifier import get_modify_dates_fn
 from data_processing.processed_data_interface import cache_results
+
 
 @cache_results("lasix_poe.csv")
 def get_processed_lasix(use_cache=False):
@@ -11,14 +12,14 @@ def get_processed_lasix(use_cache=False):
 
     There are two major parts to the transformation:
         Columns dose_val_rx, dose_unit_rx and route are concatenated to create a treatment category.
-        Treatments are extrapolated across the hospital admission dates. The extrapolation is done by first
-        computing the date range for the hospital admission. Then for each date in the range we look to see
+        Treatments are extrapolated across the icustay dates. The extrapolation is done by first
+        computing the date range for the icustay. Then for each date in the range we look to see
         what the treatment was for that day. Sometimes treatments overlap, because the previous treatment was
         cancelled prematurely in favor of a new treatment. In that scenario the newer treatment is used for
         that day. It is possible for days to have no treatment, in that case the value would be None.
 
     Note:
-        Some hospital admissions do not have a lasix treatment. More investigation needs to be done to see why
+        Some icustays do not have a lasix treatment. More investigation needs to be done to see why
         there are no treatments for them.
 
     Args:
@@ -28,8 +29,7 @@ def get_processed_lasix(use_cache=False):
         A DataFrame with the following columns:
         date: The day of the treatment as a timestamp
         treatment: The treatment category for the day
-        subject_id: The subject's ID
-        hadm_id: The hospital admission ID
+        icustay_id: The icustay ID
     """
     lasix_poe = get_lasix_poe()
     lasix_poe_w_dates = lasix_poe.dropna(subset=["start_dt", "stop_dt"])
@@ -82,7 +82,7 @@ def get_processed_lasix(use_cache=False):
                 "treatment": treatment_category,
                 "icustay_id": icu_row.icustay_id})
 
-    logging.info("No treatments for %d hadm_ids: %s" % \
+    logging.info("No treatments for %d icustay_id: %s" % \
                  (len(icu_id_w_no_treatments), ",".join([str(s) for s in icu_id_w_no_treatments])))
     expanded_treatments_df = pd.DataFrame(expanded_treatments)
     expanded_treatments_df.treatment.fillna("No treatment", inplace=True)

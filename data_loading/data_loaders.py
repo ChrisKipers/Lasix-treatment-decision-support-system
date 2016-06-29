@@ -5,47 +5,35 @@ from sqlalchemy import create_engine
 
 __CONGESTIVE_HEART_FAILURE_CODE = '428.0'
 
+__TARGET_LAB_ITEM_IDS = [
+    50159, # Sodium in Blood
+    50090, # Creatine
+    50177, # Urea nitrogen
+    50195, # BNP
+    50073, # AST
+    50062, # ALT
+    50188, # Troponin I
+    50189, # Troponin T
+    50384, # Hematocrit
+    50386, # Hemoglobin
+    50277, # Sodium in urine
+    50178, # Uric acid in blood
+    50149, # Potassium
+    50383, # Hematocrit
+]
+
 __TARGET_CHART_EVENTS = [
-    7625, 1449, 51, 52, 3313, 3315, 3317, 3321, 3323, 3325, 5610, # Blood pressure
-    211, 212, # Heart rate
-    3580, 3581, 3582, 3583, 3693, 763,# Weight
-    733, 3692, # Weight change
-    1394, # Height
-    618, 614, 615, 653, # Respiratory Rate
-    646, # SpO2
-    676, 677, 678, 679, # Temperature
-    762, # Admit wt
-    769, # Alt
-    770, # AST
-    772, # Albumin
-    773, # Alk phosphate
-    780, # Arterial pH ABG
-    803, # Dire bili
-    811, # Glucose
-    813, # Hematocrit
-    814, # Hemoglobin
-    807, # Fingerstick glucose
-    815, # INR
-    817, # LDH
-    821, # Mg
-    824, # PT
-    825, # PTT
-    827, # Phosphorous
-    829, # K
-    834, # SaO2 ABG
-    851, # Troponin
-    853, # Uric acid
-    861, # WBC
-    7610, # Cardiac index
-    7294, # BNP
-    7246, # Cuff pressure
-    7232, 7135, # Peakflow
-    6256, # Platelet
-    6255, 2445, 2334, # Vasopressin
-    4354, # Bili,
-    2697, 2699, # EF
-    2681, 2338, # Fingerstick
-    2394 # IVF
+    211, # heart rate
+    813, # hematrocrit
+    814, # hemoglobin
+    821, # magnesium
+    827, # phosphorous
+    829, # potassium
+    618, # respiratory rate
+    646, # spo2
+    677, # temperature
+    811, # glucose
+    762 # admit_weight
 ]
 
 def get_lasix_poe():
@@ -90,15 +78,14 @@ def get_demographic_details():
 
 
 def get_lab_events():
-    # TODO: move list of target lab events to constants
     sql_query = """
     SELECT le.*
     FROM mimic2v26.labevents AS le
     INNER JOIN mimic2v26.icd9 as i on i.hadm_id = le.hadm_id
     WHERE i.code='%s' AND
-    le.itemid IN (50159, 50090, 50177, 50195, 50073, 50062, 50188, 50189, 50384, 50386, 50277, 50178, 50149, 50383)
+    le.itemid IN (%s)
     AND icustay_id IS NOT NULL
-    """ % __CONGESTIVE_HEART_FAILURE_CODE
+    """ % (__CONGESTIVE_HEART_FAILURE_CODE, ", ".join([str(item) for item in __TARGET_LAB_ITEM_IDS]))
     lab_item_details = get_lab_item_details()[['itemid', 'test_name']].rename(columns={"test_name": "label"})
     lab_events = get_query_results(sql_query)
     return lab_events.merge(lab_item_details)

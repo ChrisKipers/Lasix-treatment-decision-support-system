@@ -1,9 +1,11 @@
-import pandas as pd
 import functools
+
+import pandas as pd
 
 from data_loading.data_loaders import get_patients
 
 __TARGET_YEAR = 2000
+
 
 @functools.lru_cache()
 def get_modify_dates_fn():
@@ -15,8 +17,7 @@ def get_modify_dates_fn():
         """Transforms the date_columns in a data frame by the subject's date offset.
 
         Note:
-            The data frame must contain a subject_id column and the date columns must be strings in the format
-            %Y-%m-%d %H:%M:%S
+            The data frame must contain a subject_id column and the date columns must be datetime object.
 
         Args:
             df: Date frame with subject_id column.

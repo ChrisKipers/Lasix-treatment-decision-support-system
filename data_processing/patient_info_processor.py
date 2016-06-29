@@ -3,7 +3,7 @@ from data_processing.datetime_modifier import get_modify_dates_fn
 from data_processing.processed_data_interface import cache_results
 
 @cache_results("patient_info.csv")
-def get_patient_info(use_cache=False):
+def get_processed_patient_info(use_cache=False):
     """Returns non medical information about a patient for a hospital admission stay.
 
     Args:

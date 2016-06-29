@@ -1,28 +1,25 @@
 import pandas as pd
-
 from pandas.tseries.offsets import Day
 
 from data_loading.data_loaders import get_patients
-from data_processing.processed_data_interface import cache_results
 
-@cache_results("hospital_admission_outcome.csv")
-def get_hospital_admission_outcomes(use_cache=False):
-    """Returns a dataframe containing whether a patient died or not during a hospital visit.
+
+def get_death_outcome(data, death_time_frame):
+    """Creates a data frame that contains whether the patient died within a time frame.
 
     Args:
-        use_cache: Skip computation and load results from previous computation.
+        data: A dataframe containing the following columns:
+        subject_id: The ID of the subject.
+        date: The date to compare against the date of death.
+
+        death_time_frame: The number of days that a patient must be alive after for the died outcome to be false.
 
     Returns:
-        A DataFrame with the following columns:
-        hadm_id: The ID of the hospital admission.
-        died: Whether the patient died during the hospital visit.
+        A dataframe with the following columns:
+        subject_id: The ID of the subject.
+        date: The date to compare against the date of death.
+        died: Whether the patient died within the time frame from the date.
     """
-    patients = get_patients()
-    died = patients.dod.isnull()
-
-    return pd.DataFrame({"hadm_id": patients.hadm_id, "died": died})
-
-def get_outcome(data, death_time_frame):
     patients = get_patients()
     dod_by_subject_id = {p.subject_id: p.dod for p in patients.itertuples()}
     days_unit = Day(death_time_frame)
