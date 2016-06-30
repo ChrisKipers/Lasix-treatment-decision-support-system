@@ -31,6 +31,7 @@ def get_processed_chart_events(use_cache=True):
         icustay_id:
         date,
         glucose_(70-105):
+        glucose_(70-105)_diff:
         heart_rate:
         heart_rate_diff:
         hematocrit:

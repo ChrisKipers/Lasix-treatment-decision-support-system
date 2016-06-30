@@ -28,34 +28,16 @@ def get_ml_data(use_cache=False):
         religion_descr:
         age:
         died:
-        alt(sgpt):
-        alt(sgpt)_diff:
-        ast(sgot):
-        ast(sgot)_diff:
         creat:
         creat_diff:
-        ctropni:
-        ctropni_diff:
-        ctropnt:
-        ctropnt_diff:
         hct:
         hct_diff:
-        heinz:
-        heinz_diff:
         hgb:
         hgb_diff:
-        potassium:
-        potassium_diff:
-        probnp:
-        probnp_diff:
         sodium:
         sodium_diff:
         urea_n:
         urea_n_diff:
-        uric_acid:
-        uric_acid_diff:
-        admit_wt:
-        admit_wt_diff:
         glucose_(70-105):
         glucose_(70-105)_diff:
         heart_rate:
@@ -66,8 +48,6 @@ def get_ml_data(use_cache=False):
         hemoglobin_diff:
         magnesium_(1.6-2.6):
         magnesium_(1.6-2.6)_diff:
-        phosphorous(2.7-4.5):
-        phosphorous(2.7-4.5)_diff:
         potassium_(3.5-5.3):
         potassium_(3.5-5.3)_diff:
         respiratory_rate:
