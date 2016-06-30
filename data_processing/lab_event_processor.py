@@ -27,33 +27,16 @@ def get_processed_lab_events(use_cache=True):
         A dataframe with the following columns:
         icustay_id:
         date:
-        alt(sgpt):
-        alt(sgpt)_diff:
-        ast(sgot):
-        ast(sgot)_diff:
         creat:
         creat_diff:
-        ctropni:
-        ctropni_diff:
-        ctropnt:
-        ctropnt_diff:
         hct:
         hct_diff:
-        heinz:
-        heinz_diff:
         hgb:
         hgb_diff:
-        potassium:
-        potassium_diff:
-        probnp:
-        probnp_diff:
         sodium:
         sodium_diff:
         urea_n:
         urea_n_diff:
-        uric_acid:
-        uric_acid_diff:
-
     """
     lab_events = get_lab_events()
     modify_dates_fn = get_modify_dates_fn()
