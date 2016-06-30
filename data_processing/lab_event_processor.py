@@ -14,7 +14,7 @@ _REGULAR_LAB_ITEM_FIELDS = [
 
 ALL_LAB_ITEM_FIELDS = _REGULAR_LAB_ITEM_FIELDS + [field + "_diff" for field in _REGULAR_LAB_ITEM_FIELDS]
 
-@cache_results("processed_lab_items.csv")
+@cache_results("processed_lab_items.csv", description="lab events")
 def get_processed_lab_events(use_cache=True):
     """Returns a dataframe where each row a unique combination of date and icustay_id and has a column for each lab
     item and lab item diff for each different lab item that is used in the analysis. The icustay_id and date columns

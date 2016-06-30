@@ -8,7 +8,7 @@ from data_processing.lasix_poe_processor import get_processed_lasix
 from data_processing.processed_data_interface import cache_results
 
 
-@cache_results("ml_data.csv")
+@cache_results("ml_data.csv", description="machine learning dataset")
 def get_ml_data(use_cache=False):
     """Returns a dataframe that can be used to train a ML model to predict the outcome of a congestive
     heart failure patient.

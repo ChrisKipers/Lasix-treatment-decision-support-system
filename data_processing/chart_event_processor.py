@@ -17,7 +17,7 @@ _REGULAR_CHART_ITEM_FIELDS = [
 
 ALL_CHART_ITEM_FIELDS = _REGULAR_CHART_ITEM_FIELDS + [field + "_diff" for field in _REGULAR_CHART_ITEM_FIELDS]
 
-@cache_results("processed_chart_events.csv")
+@cache_results("processed_chart_events.csv", description='chart events')
 def get_processed_chart_events(use_cache=True):
     """Returns a dataframe where each row a unique combination of date and icustay_id and has a column for each chart
     item and chart item diff for each different chart item that is used in the analysis. The icustay_id and date columns

@@ -6,7 +6,7 @@ from data_processing.datetime_modifier import get_modify_dates_fn
 from data_processing.processed_data_interface import cache_results
 
 
-@cache_results("lasix_poe.csv")
+@cache_results("lasix_poe.csv", description="lasix treatments")
 def get_processed_lasix(use_cache=False):
     """Processes the lasix poe data into a format that can be used for machine learning models.
 
@@ -82,7 +82,7 @@ def get_processed_lasix(use_cache=False):
                 "treatment": treatment_category,
                 "icustay_id": icu_row.icustay_id})
 
-    logging.info("No treatments for %d icustay_id: %s" % \
+    logging.debug("No treatments for %d icustay_id: %s" % \
                  (len(icu_id_w_no_treatments), ",".join([str(s) for s in icu_id_w_no_treatments])))
     expanded_treatments_df = pd.DataFrame(expanded_treatments)
     expanded_treatments_df.treatment.fillna("No treatment", inplace=True)

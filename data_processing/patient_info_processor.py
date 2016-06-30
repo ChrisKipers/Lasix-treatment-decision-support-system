@@ -2,7 +2,7 @@ from data_loading.data_loaders import get_patients, get_demographic_details, get
 from data_processing.datetime_modifier import get_modify_dates_fn
 from data_processing.processed_data_interface import cache_results
 
-@cache_results("patient_info.csv")
+@cache_results("patient_info.csv", description="patient info")
 def get_processed_patient_info(use_cache=False):
     """Returns non medical information about a patient for a hospital admission stay.
 

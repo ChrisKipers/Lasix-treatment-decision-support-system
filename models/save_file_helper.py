@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pandas as pd
 
@@ -12,3 +13,8 @@ def save_debugging_file(dataframe, file_name):
 
 def get_debugging_file(file_name):
     return pd.read_csv(os.path.join(_DEBUGGER_FILES_FOLDER, file_name))
+
+def delete_model_debugging_files():
+    if os.path.exists(_DEBUGGER_FILES_FOLDER):
+        shutil.rmtree(_DEBUGGER_FILES_FOLDER)
+
