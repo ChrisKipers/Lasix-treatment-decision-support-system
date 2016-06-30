@@ -5,50 +5,15 @@ from sklearn_pandas import DataFrameMapper
 from sklearn.preprocessing import LabelBinarizer, StandardScaler, Imputer
 from sklearn.pipeline import Pipeline
 
+from data_processing.chart_event_processor import ALL_CHART_ITEM_FIELDS
+from data_processing.lab_event_processor import ALL_LAB_ITEM_FIELDS
+
 
 _TREATMENT_FIELD = 'treatment'
 
-# TODO I'm not sure this is the best place to control what features are included and not included for
-# training the prediction models. I think their might need to be another layer of abstraction.
+_CATEGORY_FIELDS = ['sex']
 
-# Most the categorical fields did not seem to enhance predictive power and actually lead to less generalization and
-# result there not as interpretable.
-_CATEGORY_FIELDS = [
-    'sex',
-    #'marital_status_descr',
-    #'ethnicity_descr',
-    #'overall_payor_group_descr',
-    #'religion_descr'
-]
-
-# Lab items are removed if they have a low count
-_LAB_ITEM_FIELDS = [
-    # 'alt(sgpt)', # 18%
-    # 'ast(sgot)', # 18%
-    'creat', # 95%
-    # 'ctropni', # 2%
-    # 'ctropnt', # 15%
-    'hct', # 94%
-    'hgb', # 91%
-    'potassium', # 96%
-    # 'probnp', # 0%
-    'sodium', # 95%
-    'urea_n', # 95%
-    # 'uric_acid', # 1%
-    # 'admit_wt', # 21%
-    'glucose_(70-105)', # 95%
-    'heart_rate', # 98%
-    'hematocrit', # 92%
-    'hemoglobin', # 90%
-    'magnesium_(1.6-2.6)', #91%
-    #'phosphorous(2.7-4.5)', # 81%
-    'potassium_(3.5-5.3)', # 98%
-    'respiratory_rate', # 98%
-    'spo2', # 98%
-    'temperature_c_(calc)' # 92%
-]
-
-_SCALAR_FIELDS = _LAB_ITEM_FIELDS + [name + '_diff' for name in _LAB_ITEM_FIELDS] + ["age"]
+_SCALAR_FIELDS = ALL_CHART_ITEM_FIELDS + ALL_LAB_ITEM_FIELDS + ["age"]
 
 class CongestiveHeartFailurePreprocessor(object):
     """Prepares the congestive heart failure data to be used with a machine learning model, as well as

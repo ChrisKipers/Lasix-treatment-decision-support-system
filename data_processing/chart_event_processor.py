@@ -3,6 +3,19 @@ from data_processing.datetime_modifier import get_modify_dates_fn
 from data_processing.event_processor import resample_flatten_and_add_diff_values_to_events
 from data_processing.processed_data_interface import cache_results
 
+_REGULAR_CHART_ITEM_FIELDS = [
+    'glucose_(70-105)',
+    'heart_rate',
+    'hematocrit',
+    'hemoglobin',
+    'magnesium_(1.6-2.6)',
+    'potassium_(3.5-5.3)',
+    'respiratory_rate',
+    'spo2',
+    'temperature_c_(calc)'
+]
+
+ALL_CHART_ITEM_FIELDS = _REGULAR_CHART_ITEM_FIELDS + [field + "_diff" for field in _REGULAR_CHART_ITEM_FIELDS]
 
 @cache_results("processed_chart_events.csv")
 def get_processed_chart_events(use_cache=True):
@@ -17,8 +30,6 @@ def get_processed_chart_events(use_cache=True):
         A dataframe with the following columns:
         icustay_id:
         date,
-        admit_wt:
-        admit_wt_diff: # TODO this columns doesn't make any sense.
         glucose_(70-105):
         heart_rate:
         heart_rate_diff:
@@ -28,8 +39,6 @@ def get_processed_chart_events(use_cache=True):
         hemoglobin_diff:
         magnesium_(1.6-2.6):
         magnesium_(1.6-2.6)_diff:
-        phosphorous(2.7-4.5):
-        phosphorous(2.7-4.5)_diff:
         potassium_(3.5-5.3):
         potassium_(3.5-5.3)_diff:
         respiratory_rate:
@@ -47,4 +56,5 @@ def get_processed_chart_events(use_cache=True):
 
     chart_events = modify_dates_fn(chart_events, ['charttime'])
     # Modify shape of dataframe so that each chart item has its own column.
-    return resample_flatten_and_add_diff_values_to_events(chart_events)
+    fields_to_keep = ['icustay_id', 'date'] + ALL_CHART_ITEM_FIELDS
+    return resample_flatten_and_add_diff_values_to_events(chart_events)[fields_to_keep]

@@ -3,6 +3,16 @@ from data_processing.datetime_modifier import get_modify_dates_fn
 from data_processing.event_processor import resample_flatten_and_add_diff_values_to_events
 from data_processing.processed_data_interface import cache_results
 
+_REGULAR_LAB_ITEM_FIELDS = [
+    'creat',
+    'hct',
+    'hgb',
+    'potassium',
+    'sodium',
+    'urea_n'
+]
+
+ALL_LAB_ITEM_FIELDS = _REGULAR_LAB_ITEM_FIELDS + [field + "_diff" for field in _REGULAR_LAB_ITEM_FIELDS]
 
 @cache_results("processed_lab_items.csv")
 def get_processed_lab_events(use_cache=True):
@@ -51,5 +61,6 @@ def get_processed_lab_events(use_cache=True):
     lab_events.drop('value', axis=1, inplace=True)
     lab_events.rename(columns={"valuenum": "value"}, inplace=True)
     lab_events = modify_dates_fn(lab_events, ["charttime"])
+    fields_to_keep = ['icustay_id', 'date'] + ALL_LAB_ITEM_FIELDS
 
-    return resample_flatten_and_add_diff_values_to_events(lab_events)
+    return resample_flatten_and_add_diff_values_to_events(lab_events)[fields_to_keep]
