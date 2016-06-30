@@ -3,7 +3,7 @@ import pandas as pd
 
 from data_processing.ml_data_prepairer import get_ml_data
 from models.build_decision_engine import get_random_forest_decision_engine
-from models.decision_engine_analyzer import DecisionEngineAnalyzer
+from models.analysis.decision_engine_analyzer import DecisionEngineAnalyzer
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -25,7 +25,8 @@ print("%.3f%% of actual treatments match suggested treatments" %
 
 counts = decision_engine_analyzer.get_treatment_counts()
 survival_rates = decision_engine_analyzer.get_treatment_survival_rate()
-all_date = pd.merge(counts, survival_rates, left_index=True, right_index=True).sort_values('suggested_count', ascending=False)
+all_date = pd.merge(counts, survival_rates, left_index=True, right_index=True).sort_values('suggested_count',
+                                                                                           ascending=False)
 print('Treatment suggestions')
 print(all_date)
 
@@ -35,8 +36,10 @@ print(decision_engine_analyzer.get_outcome_change_per_actual_treatment())
 print('Recommended treatment survival rate increase over actual treatment')
 print(decision_engine_analyzer.get_outcome_change_per_recommended_treatment())
 
+outcome_changes = decision_engine_analyzer.get_outcome_change_by_recommended_and_actual_treatment()
 print('Recommended treatment counts per actual treatment')
-print(decision_engine_analyzer.get_recommended_treatments_count_per_actual_treatment())
+print(outcome_changes)
 
-print('Actual treatment counts per recommended treatment')
-print(decision_engine_analyzer.get_actual_treatments_count_per_recommended_treatment())
+top_treatment_improvements = outcome_changes[(outcome_changes.counts > 20) & (outcome_changes.outcome_diff > 0.05)]
+print("Top opportunities for treatment improvements")
+print(top_treatment_improvements.sort('outcome_diff', ascending=False))

@@ -1,0 +1,10 @@
+from models.save_file_helper import get_debugging_file
+from models.analysis.outcome_prediction_analyzer import OutcomePredictionAnalyzer
+
+outcome_prediction_results_df = get_debugging_file("OutcomePredictor_prediction_results.csv")
+
+outcome_prediction_analyzer = OutcomePredictionAnalyzer(outcome_prediction_results_df)
+
+print("Treatment distributions by error type")
+treatment_distributions_with_error_type = outcome_prediction_analyzer.get_treatment_distributions_with_error_type()
+print(treatment_distributions_with_error_type)

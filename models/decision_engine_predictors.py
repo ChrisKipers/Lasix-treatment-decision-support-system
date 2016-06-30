@@ -35,6 +35,7 @@ class _BasePredictor(object):
             data: A dataframe containing patient features used to train the prediction model.
 
         """
+        class_name = self.__class__.__name__
         self._pre_fit_hook(data)
 
         y = self._get_outcome_data_for_training(data)
@@ -43,19 +44,19 @@ class _BasePredictor(object):
         self._pipeline.fit(X_train, y_train)
 
         train_pred = self._pipeline.predict(X_train)
-        print("train accuracy %.5f" % accuracy_score(train_pred, y_train))
+        print("%s train accuracy %.5f" % (class_name, accuracy_score(train_pred, y_train)))
 
         test_pred = self._pipeline.predict(X_test)
-        print("test accuracy %.5f" % accuracy_score(test_pred, y_test))
+        print("%s test accuracy %.5f" % (class_name, accuracy_score(test_pred, y_test)))
 
-        has_treatment = ~data.treatment.isnull()
+        has_treatment = data.treatment != 'No treatment'
         X_treatment = data[has_treatment]
-        y_treatment = y[has_treatment]
+        y_treatment = self._get_outcome_data_for_training(X_treatment)
 
         # Predict accuracy among the results with a treatment since the data is skewed so heavy in favor of no
         # treatment.
         treat_pred = self._pipeline.predict(X_treatment)
-        print("treatment accuracy: %.5f" % accuracy_score(treat_pred, y_treatment))
+        print("%s treatment accuracy: %.5f" % (class_name, accuracy_score(treat_pred, y_treatment)))
 
         all_pred = self._pipeline.predict(data)
         predicted_value = self._get_predicted_value(all_pred)

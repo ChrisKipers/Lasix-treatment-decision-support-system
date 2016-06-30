@@ -66,19 +66,35 @@ class DecisionEngineAnalyzer(object):
 
         return self._get_outcome_change_per_treatment(target_treatments, survived_change_diffs)
 
-    def get_recommended_treatments_count_per_actual_treatment(self):
-        return pd.pivot_table(
-            self._actual_treatment_with_recommended_treatment,
-            index=['actual_treatment', 'recommended_treatment'],
-            values='recommended_survived', aggfunc=len
+    def get_outcome_change_by_recommended_and_actual_treatment(self):
+        a_survived = self._actual_treatment_with_recommended_treatment.actual_survived.astype(int)
+        r_survived = self._actual_treatment_with_recommended_treatment.recommended_survived.astype(int)
+        survived_change_diffs = r_survived - a_survived
+        survived_change_diffs.name = "outcome_diff"
+        treatments =\
+            self._actual_treatment_with_recommended_treatment[['recommended_treatment', 'actual_treatment', 'actual_survived']]
+        treatments_with_change_diffs = pd.concat([treatments, survived_change_diffs], axis=1)
+        counts = pd.pivot_table(
+            treatments_with_change_diffs,
+            index=['recommended_treatment', 'actual_treatment'],
+            values="outcome_diff",
+            aggfunc=len
+        )
+        counts.name = "counts"
+
+        average_diff = pd.pivot_table(
+            treatments_with_change_diffs,
+            index=['recommended_treatment', 'actual_treatment'],
+            values='outcome_diff', aggfunc=np.mean
         )
 
-    def get_actual_treatments_count_per_recommended_treatment(self):
-        return pd.pivot_table(
-            self._actual_treatment_with_recommended_treatment,
+        actual_survival_rate = pd.pivot_table(
+            treatments_with_change_diffs,
             index=['recommended_treatment', 'actual_treatment'],
-            values='recommended_survived', aggfunc=len
+            values='actual_survived', aggfunc=np.mean
         )
+
+        return pd.concat([counts, actual_survival_rate, average_diff], axis=1)
 
     def _get_outcome_change_per_treatment(self, treatments, survival_change_diff):
         change_with_actual_treatment = \
