@@ -39,7 +39,7 @@ class _BasePredictor(object):
         self._pre_fit_hook(data)
 
         y = self._get_outcome_data_for_training(data)
-        X_train, X_test, y_train, y_test = train_test_split(data, y, test_size=0.3)
+        X_train, X_test, y_train, y_test = train_test_split(data, y, test_size=0.1)
 
         self._pipeline.fit(X_train, y_train)
 
