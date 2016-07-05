@@ -1,5 +1,4 @@
 import logging
-import pandas as pd
 
 from data_processing.ml_data_prepairer import get_ml_data
 from models.build_decision_engine import get_random_forest_decision_engine
@@ -20,26 +19,21 @@ print(decision_engine.get_outcome_feature_importance().sort_values('importance',
 print("Important Features for actual treatment prediction")
 print(decision_engine.get_actual_treatment_feature_importance().sort_values('importance', ascending=False))
 
-print("%.3f%% of actual treatments match suggested treatments" %
-      decision_engine_analyzer.get_percent_of_correct_treatments())
-
-counts = decision_engine_analyzer.get_treatment_counts()
-survival_rates = decision_engine_analyzer.get_treatment_survival_rate()
-all_date = pd.merge(counts, survival_rates, left_index=True, right_index=True).sort_values('suggested_count',
-                                                                                           ascending=False)
-print('Treatment suggestions')
-print(all_date)
-
-print('Actual treatment survival rate increase over recommended treatment')
-print(decision_engine_analyzer.get_outcome_change_per_actual_treatment())
-
-print('Recommended treatment survival rate increase over actual treatment')
-print(decision_engine_analyzer.get_outcome_change_per_recommended_treatment())
+recommended_treatment_overview = decision_engine_analyzer.get_recommended_treatment_overview()
+print('Recommended treatment overview')
+print(recommended_treatment_overview)
 
 outcome_changes = decision_engine_analyzer.get_outcome_change_by_recommended_and_actual_treatment()
 print('Recommended treatment counts per actual treatment')
 print(outcome_changes)
 
-top_treatment_improvements = outcome_changes[(outcome_changes.counts > 20) & (outcome_changes.outcome_diff > 0.05)]
+top_treatment_improvements = outcome_changes[(outcome_changes.counts > 20) & (outcome_changes.survival_rate_improvement > 0.025)]
 print("Top opportunities for treatment improvements")
-print(top_treatment_improvements.sort('outcome_diff', ascending=False))
+print(top_treatment_improvements.sort('counts', ascending=False))
+
+filtered_rto = recommended_treatment_overview[recommended_treatment_overview.suggested_count > 100]
+filtered_rto.actual_count.plot.bar(title="Actual treatment distribution", rot=45)
+
+filtered_rto.suggested_count.plot.bar(title="Recommended treatment distribution", rot=45)
+
+filtered_rto.predicted_survival_rate_improvement.plot.bar(title="Predicted survival rate improvement", rot=45)

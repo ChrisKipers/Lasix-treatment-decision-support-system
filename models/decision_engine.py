@@ -51,6 +51,9 @@ class DecisionEngine(object):
         # the input dataframe by row position.
         return rows_with_best_probability[['treatment', 'probability_of_living']]
 
+    def get_probability_of_survival(self, prediction_df):
+        return self._outcome_predictor.get_probability_of_survival(prediction_df)
+
     def get_actual_treatment_feature_importance(self):
         """Returns a dataframe containing the each column used by the actual treatment prediction model
         and the relative importance it has to the outcome.
