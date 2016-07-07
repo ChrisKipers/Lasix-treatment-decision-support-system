@@ -27,8 +27,8 @@ def get_decision_engine(data):
 
 
 def delete_cached_model():
-    if os.path.exists(MODEL_FILE_PATH):
-        os.remove(MODEL_FILE_PATH)
+    if os.path.exists(CACHE_MODEL_DIR):
+        os.remove(CACHE_MODEL_DIR)
 
 
 def __get_decision_engine(data):
