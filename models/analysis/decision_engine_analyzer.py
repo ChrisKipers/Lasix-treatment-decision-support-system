@@ -1,5 +1,9 @@
+import os
 import pandas as pd
 import numpy as np
+import shutil
+
+ANALYSIS_RESULTS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "__analysis_results__")
 
 
 class DecisionEngineAnalyzer(object):
@@ -108,6 +112,40 @@ class DecisionEngineAnalyzer(object):
         recommended_dosage = pd.to_numeric(recommended_treatment.str.extract('(\d+)')).fillna(0)
         return recommended_dosage - actual_dosage
 
+    def create_analysis_reports(self):
+        if not os.path.exists(ANALYSIS_RESULTS_DIR):
+            os.makedirs(ANALYSIS_RESULTS_DIR)
+
+        self._decision_engine.get_outcome_feature_importance() \
+            .sort_values('importance', ascending=False) \
+            .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "outcome_feature_importance.csv"), index=False)
+
+        print("Important Features for actual treatment prediction")
+        self._decision_engine.get_actual_treatment_feature_importance() \
+            .sort_values('importance', ascending=False) \
+            .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "viable_treatment_feature_importance.csv"), index=False)
+
+        self.get_recommended_treatment_overview() \
+            .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "recommended_treatment_overview.csv"), index=False)
+
+        actual_vs_recommended_treatment = self.get_outcome_change_by_recommended_and_actual_treatment()
+        actual_vs_recommended_treatment \
+            .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "recommended_vs_actual_treatment.csv"), index=False)
+
+        top_treatment_improvements = \
+            actual_vs_recommended_treatment[
+                (actual_vs_recommended_treatment.counts > 20) &
+                (actual_vs_recommended_treatment.survival_rate_improvement > 0.025)]
+        top_treatment_improvements \
+            .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "top_treatment_improvements.csv"), index=False)
+        #
+        # filtered_rto = recommended_treatment_overview[recommended_treatment_overview.suggested_count > 100]
+        # filtered_rto.actual_count.plot.bar(title="Actual treatment distribution", rot=45)
+        #
+        # filtered_rto.suggested_count.plot.bar(title="Recommended treatment distribution", rot=45)
+        #
+        # filtered_rto.predicted_survival_rate_improvement.plot.bar(title="Predicted survival rate improvement", rot=45)
+
     def _get_treatment_counts(self):
         top_suggestion_treatment_counts = self._top_suggestions.treatment.value_counts()
         actual_treatment_counts = self._data.treatment.value_counts()
@@ -115,3 +153,8 @@ class DecisionEngineAnalyzer(object):
             "suggested_count": top_suggestion_treatment_counts,
             "actual_count": actual_treatment_counts
         })
+
+
+def delete_previous_analysis_reports():
+    if os.path.exists(ANALYSIS_RESULTS_DIR):
+        shutil.rmtree(ANALYSIS_RESULTS_DIR)

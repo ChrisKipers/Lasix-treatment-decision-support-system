@@ -1,7 +1,7 @@
 import logging
 
 from data_processing.ml_data_prepairer import get_ml_data
-from models.build_decision_engine import get_random_forest_decision_engine
+from models.build_decision_engine import get_decision_engine
 from models.analysis.decision_engine_analyzer import DecisionEngineAnalyzer
 
 logger = logging.getLogger()
@@ -9,7 +9,7 @@ logger.setLevel(logging.INFO)
 
 congestive_heart_failure_data = get_ml_data()
 
-decision_engine = get_random_forest_decision_engine(congestive_heart_failure_data)
+decision_engine = get_decision_engine(congestive_heart_failure_data)
 
 decision_engine_analyzer = DecisionEngineAnalyzer(decision_engine, congestive_heart_failure_data)
 

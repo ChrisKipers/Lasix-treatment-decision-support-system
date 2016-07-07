@@ -5,3 +5,5 @@ data_processing/processed_data
 __pycache__
 *.pyc
 models/debugging_files
+models/__cached_models__
+models/analysis/__analysis_results__
