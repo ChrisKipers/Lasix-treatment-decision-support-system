@@ -120,13 +120,12 @@ class DecisionEngineAnalyzer(object):
             .sort_values('importance', ascending=False) \
             .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "outcome_feature_importance.csv"), index=False)
 
-        print("Important Features for actual treatment prediction")
         self._decision_engine.get_actual_treatment_feature_importance() \
             .sort_values('importance', ascending=False) \
             .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "viable_treatment_feature_importance.csv"), index=False)
 
         self.get_recommended_treatment_overview() \
-            .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "recommended_treatment_overview.csv"), index=False)
+            .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "recommended_treatment_overview.csv"))
 
         actual_vs_recommended_treatment = self.get_outcome_change_by_recommended_and_actual_treatment()
         actual_vs_recommended_treatment \
