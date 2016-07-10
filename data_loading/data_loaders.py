@@ -28,7 +28,6 @@ __TARGET_CHART_EVENTS = [
     814, # hemoglobin
     821, # magnesium
     827, # phosphorous
-    829, # potassium
     618, # respiratory rate
     646, # spo2
     677, # temperature
@@ -43,7 +42,7 @@ def get_lasix_poe():
     INNER JOIN mimic2v26.poe_med AS poem on poe.poe_id = poem.poe_id
     INNER JOIN mimic2v26.admissions AS a on a.hadm_id = poe.hadm_id
     INNER JOIN mimic2v26.icd9 as i on i.hadm_id = a.hadm_id
-    WHERE i.code='%s' AND poe.medication = 'Furosemide' AND icustay_id IS NOT NULL
+    WHERE i.code='%s' AND poe.medication = 'Furosemide' AND poe.icustay_id IS NOT NULL
     """ % __CONGESTIVE_HEART_FAILURE_CODE
     return get_query_results(sql_query)
 

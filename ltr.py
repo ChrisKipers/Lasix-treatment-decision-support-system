@@ -28,20 +28,13 @@ def cli(ctx, ll, cache):
 @cli.command(help="Remove all cached data")
 @click.pass_context
 def clean(ctx):
-    clear_processed_data_cache()
-    click.echo("Cached preprocessed data removed")
-    delete_model_debugging_files()
-    click.echo("Model debugging files removed")
-    delete_cached_model()
-    click.echo("Decision engine cache deleted")
-    delete_previous_analysis_reports()
-    click.echo("Analysis reports deleted")
+    _all_clean()
 
 @cli.command(help="Build machine learning feature set")
 @click.pass_context
 def pd(ctx):
     # When building a new dataset, we should clear all cache since the models and analysis are no longer valid
-    clean(ctx)
+    _all_clean()
     get_ml_data()
     click.echo("New dataset built")
 
@@ -65,6 +58,16 @@ def dea(ctx):
     analyzer = DecisionEngineAnalyzer(decision_engine, ml_data)
     analyzer.create_analysis_reports()
     click.echo("Reports created in directory %s" % ANALYSIS_RESULTS_DIR)
+
+def _all_clean():
+    clear_processed_data_cache()
+    click.echo("Cached preprocessed data removed")
+    delete_model_debugging_files()
+    click.echo("Model debugging files removed")
+    delete_cached_model()
+    click.echo("Decision engine cache deleted")
+    delete_previous_analysis_reports()
+    click.echo("Analysis reports deleted")
 
 
 if __name__ == '__main__':

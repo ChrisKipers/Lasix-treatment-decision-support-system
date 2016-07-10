@@ -9,7 +9,6 @@ _REGULAR_CHART_ITEM_FIELDS = [
     'hematocrit',
     'hemoglobin',
     'magnesium_(1.6-2.6)',
-    'potassium_(3.5-5.3)',
     'respiratory_rate',
     'spo2',
     'temperature_c_(calc)'

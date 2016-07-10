@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 import shutil
 
 ANALYSIS_RESULTS_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), "__analysis_results__")
@@ -137,6 +138,10 @@ class DecisionEngineAnalyzer(object):
                 (actual_vs_recommended_treatment.survival_rate_improvement > 0.025)]
         top_treatment_improvements \
             .to_csv(os.path.join(ANALYSIS_RESULTS_DIR, "top_treatment_improvements.csv"), index=False)
+
+        self.plot_actual_treatment_frequency_vs_recommended_treatment_frequency()
+        self.plot_predicted_survival_rate_improvement()
+
         #
         # filtered_rto = recommended_treatment_overview[recommended_treatment_overview.suggested_count > 100]
         # filtered_rto.actual_count.plot.bar(title="Actual treatment distribution", rot=45)
@@ -145,13 +150,42 @@ class DecisionEngineAnalyzer(object):
         #
         # filtered_rto.predicted_survival_rate_improvement.plot.bar(title="Predicted survival rate improvement", rot=45)
 
+    def plot_actual_treatment_frequency_vs_recommended_treatment_frequency(self):
+        # TODO save overview as property so that it is not recalculated every time it is needed
+        recommended_treatment_overview = self.get_recommended_treatment_overview()
+        filtered_rto = recommended_treatment_overview[recommended_treatment_overview.suggested_count > 100]
+        ax = filtered_rto[['actual_count', 'suggested_count']].plot(kind='bar')
+        ax.legend(['Actual', 'Recommended'], loc='upper left')
+        ax.set_title('Actual vs Recommended Treatment Frequency', fontdict={"fontsize": 18})
+        ax.set_xlabel('Treatment')
+        ax.set_ylabel('Frequency')
+        plt.gcf().subplots_adjust(bottom=0.2)
+        plt.xticks(rotation=30)
+        plt.savefig(os.path.join(ANALYSIS_RESULTS_DIR, "actual_vs_recommended_treatment.png"))
+        plt.close()
+
+    def plot_predicted_survival_rate_improvement(self):
+        recommended_treatment_overview = self.get_recommended_treatment_overview()
+        filtered_rto = recommended_treatment_overview[recommended_treatment_overview.suggested_count > 100]
+        improvement_as_percent = filtered_rto.predicted_survival_rate_improvement * 100
+        ax = improvement_as_percent.plot(kind='bar')
+        ax.set_title("Predicted survival rate improvement", fontdict={"fontsize": 18})
+        ax.set_xlabel('Treatment')
+        ax.set_ylabel('Survival Rate Improvement')
+        plt.gcf().subplots_adjust(bottom=0.2)
+        plt.xticks(rotation=30)
+        yticks, _ = plt.yticks()
+        plt.yticks(yticks, [str(yt) + '%' for yt in yticks])
+        plt.savefig(os.path.join(ANALYSIS_RESULTS_DIR, "predicted_survival_rate_improvement.png"))
+        plt.close()
+
     def _get_treatment_counts(self):
-        top_suggestion_treatment_counts = self._top_suggestions.treatment.value_counts()
-        actual_treatment_counts = self._data.treatment.value_counts()
-        return pd.DataFrame({
-            "suggested_count": top_suggestion_treatment_counts,
-            "actual_count": actual_treatment_counts
-        })
+            top_suggestion_treatment_counts = self._top_suggestions.treatment.value_counts()
+            actual_treatment_counts = self._data.treatment.value_counts()
+            return pd.DataFrame({
+                "suggested_count": top_suggestion_treatment_counts,
+                "actual_count": actual_treatment_counts
+            })
 
 
 def delete_previous_analysis_reports():
